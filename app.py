@@ -37,6 +37,18 @@ def about():  # put application's code here
     return render_template("about.html")
 
 
+@app.route('/blogs')
+def blogs():  # put application's code here
+    articles = Article.query.order_by(Article.date.desc()).all()
+    return render_template("blogs.html", articles=articles)
+
+
+@app.route('/post/<int:id>')
+def  post(id):  # put application's code here
+    article = Article.query.get(id)
+    return render_template("blog_post.html", article=article)
+
+
 @app.route('/create_blog', methods=['POST', 'GET'])
 def create_blog():  # put application's code here
     if request.method == "POST":
