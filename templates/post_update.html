@@ -1,0 +1,15 @@
+{% extends  'base.html' %}
+
+{% block tittle %}
+    Update blog
+{% endblock %}
+
+{% block body %}
+    <h1> Add blog </h1>
+    <form method="post">
+        <input type="text" name="title" value="{{ article.title }}" id="title"><br>
+        <textarea name="intro" id="intro">{{ article.intro }}</textarea><br>
+        <textarea name="text" id="text">{{ article.text }}</textarea><br>
+        <input type="submit" value="Изменить">
+    </form>
+{% endblock %}

@@ -10,5 +10,7 @@
         <h2>{{ article.intro }}</h2>
         <p>{{ article.text }}</p>
         <p><b>Дата: {{ article.date.date() }}</b></p>
+    <a href="/post/{{ article.id }}/del">Удалить</a>
+    <a href="/post/{{ article.id }}/update">Изменить</a>
     </div>
 {% endblock %}

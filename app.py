@@ -57,16 +57,43 @@ def create_blog():  # put application's code here
         text = request.form['text']
 
         article = Article(title=title, intro=intro, text=text)
-        print(article)
 
         try:
             db.session.add(article)
             db.session.commit()
-            return redirect('/')
+            return redirect('/blogs')
         except:
             return "Error add"
     else:
         return render_template("create_blog.html")
+
+
+@app.route('/post/<int:id>/del')
+def delete_blog(id):  # put application's code here
+    article = Article.query.get_or_404(id)
+    try:
+        db.session.delete(article)
+        db.session.commit()
+        return redirect('/blogs')
+    except:
+        return "Error delete"
+
+
+@app.route('/post/<int:id>/update', methods=['POST', 'GET'])
+def update_blog(id):  # put application's code here
+    article = Article.query.get(id)
+    if request.method == "POST":
+        article.title = request.form['title']
+        article.intro = request.form['intro']
+        article.text = request.form['text']
+
+        try:
+            db.session.commit()
+            return redirect('/blogs')
+        except:
+            return "Error add"
+    else:
+        return render_template("post_update.html", article=article)
 
 
 if __name__ == '__main__':
