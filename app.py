@@ -1,8 +1,13 @@
 from flask import Flask, render_template, url_for, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from flask_restful import Api, Resource, reqparse
+import json
+
+
 
 app = Flask(__name__)
+api = Api(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -16,86 +21,98 @@ class Article(db.Model):
     text = db.Column(db.Text, nullable=False)
     date = db.Column(db.DateTime, default=datetime.utcnow)
 
+    def to_dict(self):
+        fields = {
+            'title': self.title,
+            'intro': self.intro,
+            'text': self.text,
+            'date': self.date,
+        }
+        return fields
+
     def __repr__(self):
         return '<Article %r>' % self.id
 
 
-@app.route('/')
-@app.route('/home')
-def hello_world():  # put application's code here
-    return render_template("index.html")
+class Quote(Resource):
 
+    def get(self):
+        # парсер запросов
+        parser = reqparse.RequestParser()
+        parser.add_argument("id")
+        params = parser.parse_args()
+        id_loc = params["id"]
 
-@app.route('/user/<string:name>/<int:id>')
-def print_user(name, id):
-    name = name.title()  # Заглавная буква
-    return f'User {name}, id {str(id)}'
+        article = Article.query.get(id_loc)
 
+        # Конвертация class в json
+        article = json.dumps(article.to_dict(), ensure_ascii=False, indent=4, sort_keys=True, default=str)
 
-@app.route('/about')
-def about():  # put application's code here
-    return render_template("about.html")
+        return article, 200
 
+    def post(self):
+        # парсер запросов
+        parser = reqparse.RequestParser()
+        parser.add_argument("title")
+        parser.add_argument("intro")
+        parser.add_argument("text")
+        params = parser.parse_args()
 
-@app.route('/blogs')
-def blogs():  # put application's code here
-    articles = Article.query.order_by(Article.date.desc()).all()
-    return render_template("blogs.html", articles=articles)
+        #print(params["id"])
 
-
-@app.route('/post/<int:id>')
-def  post(id):  # put application's code here
-    article = Article.query.get(id)
-    return render_template("blog_post.html", article=article)
-
-
-@app.route('/create_blog', methods=['POST', 'GET'])
-def create_blog():  # put application's code here
-    if request.method == "POST":
-        title = request.form['title']
-        intro = request.form['intro']
-        text = request.form['text']
+        title = params["title"]
+        intro = params["intro"]
+        text = params["text"]
 
         article = Article(title=title, intro=intro, text=text)
 
         try:
             db.session.add(article)
             db.session.commit()
-            return redirect('/blogs')
+            return f"post added"
         except:
             return "Error add"
-    else:
-        return render_template("create_blog.html")
 
+    def put(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument("id")
+        parser.add_argument("title")
+        parser.add_argument("intro")
+        parser.add_argument("text")
+        params = parser.parse_args()
 
-@app.route('/post/<int:id>/del')
-def delete_blog(id):  # put application's code here
-    article = Article.query.get_or_404(id)
-    try:
-        db.session.delete(article)
-        db.session.commit()
-        return redirect('/blogs')
-    except:
-        return "Error delete"
+        # print(params["id"])
 
+        id_loc = params["id"]
+        article = Article.query.get(id_loc)
 
-@app.route('/post/<int:id>/update', methods=['POST', 'GET'])
-def update_blog(id):  # put application's code here
-    article = Article.query.get(id)
-    if request.method == "POST":
-        article.title = request.form['title']
-        article.intro = request.form['intro']
-        article.text = request.form['text']
+        article.title = params["title"]
+        article.intro = params["intro"]
+        article.text = params["text"]
 
         try:
             db.session.commit()
-            return redirect('/blogs')
+            return "blog successfully update", 201
         except:
-            return "Error add"
-    else:
-        return render_template("post_update.html", article=article)
+            return "Error update", 400
+
+    def delete(self):
+        # парсер запросов
+        parser = reqparse.RequestParser()
+        parser.add_argument("id")
+        params = parser.parse_args()
+        id_loc = params["id"]
+
+        article = Article.query.get_or_404(id_loc)
+        try:
+            db.session.delete(article)
+            db.session.commit()
+            return f"Quote with id {id_loc} is deleted.", 200
+        except:
+            return "Error", 400
 
 
+api.add_resource(Quote, "/blog", "/blog/", "/blog/<int:id>")
 if __name__ == '__main__':
     app.debug = True
     app.run()
